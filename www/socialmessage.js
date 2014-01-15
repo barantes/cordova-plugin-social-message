@@ -1,4 +1,3 @@
-
 var exec = require("cordova/exec");
 
 var SocialMessage = function () {
@@ -17,5 +16,12 @@ SocialMessage.prototype.send = function (message) {
     message.activityTypes = message.activityTypes.join(",");
     exec(null, null, "SocialMessage", "send", [message]);
 };
+
+/** Opens a profile or page using either Facebook native app (if installed) or Facebook's website on external browser.
+ * example: var options = {facebookId : "123456"};
+**/
+SocialMessage.prototype.openFacebook = function (options) {
+		exec(null, null, "SocialMessage", "openFacebook", [options]);
+	};
 
 module.exports = new SocialMessage();
