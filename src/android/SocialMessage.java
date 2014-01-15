@@ -12,17 +12,16 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 
-import android.annotation.SuppressLint;
-
+import org.apache.cordova.CallbackContext;
+import org.apache.cordova.CordovaPlugin;
 import org.json.JSONArray;
-import org.json.JSONObject;
 import org.json.JSONException;
+import org.json.JSONObject;
+
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Environment;
-
-import org.apache.cordova.CallbackContext;
-import org.apache.cordova.CordovaPlugin;
 
 @SuppressLint("DefaultLocale")
 public class SocialMessage extends CordovaPlugin {
@@ -30,22 +29,35 @@ public class SocialMessage extends CordovaPlugin {
 	@Override
 	public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
 		JSONObject json = args.getJSONObject(0);
-		String text = getJSONProperty(json, "text");
-		String subject = getJSONProperty(json, "subject");
-		String url = getJSONProperty(json, "url");
-		String image = getJSONProperty(json, "image");
-		if (url != null && url.length() > 0) {
-			if (text == null) {
-				text = url;
-			} else {
-				text = text + " " + url;
+		
+		if("openFacebook".equalsIgnoreCase(action)) {
+			String facebookId = getJSONProperty(json, "facebookId");
+			try {
+				doOpenFacebookIntent(facebookId);
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		}
-		try {
-			doSendIntent(text, subject, image);
-		} catch (IOException e) {
-			e.printStackTrace();
+		else {
+			String text = getJSONProperty(json, "text");
+			String subject = getJSONProperty(json, "subject");
+			String url = getJSONProperty(json, "url");
+			String image = getJSONProperty(json, "image");
+			if (url != null && url.length() > 0) {
+				if (text == null) {
+					text = url;
+				} else {
+					text = text + " " + url;
+				}
+			}
+			try {
+				doSendIntent(text, subject, image);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
+		
+		
 		return true;
 	}
 	
@@ -98,4 +110,31 @@ public class SocialMessage extends CordovaPlugin {
 		is.close();
 		os.close();
 	}
+	
+	private void doOpenFacebookIntent(final String facebookId) throws IOException {
+		cordova.getThreadPool().execute(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					cordova.getActivity().startActivityForResult(getOpenFacebookIntent(facebookId), 0);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
+		
+	}
+	
+	public Intent getOpenFacebookIntent(String facebookId) {
+	    try {
+	    	cordova.getActivity().getPackageManager()
+	                .getPackageInfo("com.facebook.katana", 0); //Checks if FB is even installed.
+	        return new Intent(Intent.ACTION_VIEW,
+	                Uri.parse("fb://profile/" + facebookId));
+	    } catch (Exception e) {
+	        return new Intent(Intent.ACTION_VIEW,
+	                Uri.parse("https://www.facebook.com/" + facebookId));
+	    }
+	}
+	
 }
